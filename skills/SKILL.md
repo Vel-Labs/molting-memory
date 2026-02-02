@@ -505,8 +505,6 @@ memory-system/
 
 ## Resources
 
-- **Concept Guide**: [Agentic Memory: A Practical Guide](https://docs.google.com/document/d/1eQDmLjwr3oLQgKRLDSHwmw13YaLjCR0V-FAIB07pzn8/edit)
-- **Implementation Guide**: [Velcrafting Agentic Memory System](https://docs.google.com/document/d/1MOcD1N5c5eXkfo3dBY3GduM-2F8B8eTvx-3ZvUgBw5E/edit)
 - **GitHub Repo**: https://github.com/Vel-Labs/molting-memory
 - **Qdrant Docs**: https://qdrant.tech/documentation/
 

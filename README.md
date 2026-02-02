@@ -326,7 +326,6 @@ Sessions are read from `~/.openclaw/agents/main/sessions/*.jsonl` and saved to d
 
 ## Resources
 
-- **Concept Guide**: https://docs.google.com/document/d/1eQDmLjwr3oLQgKRLDSHwmw13YaLjCR0V-FAIB07pzn8/edit
 - **Full Docs**: https://github.com/Vel-Labs/molting-memory
 - **Qdrant**: https://qdrant.tech/documentation/
 

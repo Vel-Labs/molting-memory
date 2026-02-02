@@ -1,0 +1,46 @@
+{
+  "user": {
+    "name": "Steven"
+  },
+  "collections": {
+    "mem_steven": {
+      "desc": "Steven context",
+      "keywords": [
+        "steven",
+        "steven"
+      ]
+    },
+    "mem_sessions": {
+      "desc": "Session transcripts",
+      "keywords": [
+        "session",
+        "transcript"
+      ]
+    },
+    "mem_distilled": {
+      "desc": "Weekly summaries",
+      "keywords": [
+        "weekly",
+        "summary"
+      ]
+    }
+  },
+  "qdrant": {
+    "url": "http://127.0.0.1:6333"
+  },
+  "memory": {
+    "dir": "/home/vel/.openclaw/memory"
+  },
+  "pruning": {
+    "daily_file_retention_days": 7,
+    "short_term_vector_days": 30,
+    "auto_prune_enabled": true
+  },
+  "cron": {
+    "light": "0 */4 * * *",
+    "heavy": "0 */2 * * *"
+  },
+  "soul_md": {
+    "boot_protocol": false
+  }
+}

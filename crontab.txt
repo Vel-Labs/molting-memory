@@ -1,0 +1,14 @@
+# Molting Memory v1.0 - Cron Jobs
+# Generated: 2026-02-01
+
+# Light consolidation
+0 */4 * * * cd /home/vel/.openclaw/agent-code/molting-memory && python scripts/memory_brain.py --consolidate light
+
+# Heavy consolidation
+0 */2 * * * cd /home/vel/.openclaw/agent-code/molting-memory && python scripts/memory_brain.py --consolidate heavy
+
+# Session ingestion (hourly)
+0 * * * * cd /home/vel/.openclaw/agent-code/molting-memory && python scripts/ingest_sessions.py --hours 1
+
+# Full re-index (daily at 2 AM)
+0 2 * * * cd /home/vel/.openclaw/agent-code/molting-memory && python scripts/vectorize.py --index-all
