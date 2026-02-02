@@ -2,7 +2,7 @@
 """
 Memory System Onboarding Questionnaire (v1.0)
 
-Run this to configure your agentic memory system.
+Run this to configure your Molting Memory system.
 Answers are saved to memory/entities/your_preferences.md
 
 Two Modes:
@@ -12,17 +12,40 @@ Two Modes:
 
 import json
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 
-# Check for session discovery first
-SESSIONS_DIR = Path("/home/vel/.openclaw/agents/main/sessions")
+# ═══════════════════════════════════════════════════════════════
+# SESSION DISCOVERY - Auto-detect all OpenClaw versions
+# ═══════════════════════════════════════════════════════════════
 
-def count_sessions():
-    """Count existing sessions and messages."""
-    session_files = list(SESSIONS_DIR.glob("*.jsonl"))
+# Default session directories (relative paths)
+DEFAULT_SESSION_DIRS = [
+    "~/.openclaw/agents/main/sessions",      # OpenClaw v3
+    "~/moltbot/agents/main/sessions",        # Moltbot v2
+    "~/.clawdbot/agents/main/sessions",      # Clawdbot (original)
+    "~/.clawd/agents/main/sessions",         # Alternative v3 path
+]
+
+def find_sessions():
+    """Find all session files across all possible directories."""
+    all_files = []
+    found_dirs = []
+
+    for sess_dir_str in DEFAULT_SESSION_DIRS:
+        sess_dir = Path(os.path.expanduser(sess_dir_str))
+        if sess_dir.exists():
+            files = list(sess_dir.glob("*.jsonl"))
+            if files:
+                found_dirs.append(str(sess_dir))
+                all_files.extend(files)
+
+    return all_files, found_dirs
+
+def count_messages(session_files):
+    """Count messages in session files."""
     total_messages = 0
-    
     for sf in session_files:
         try:
             with open(sf, 'r') as f:
@@ -31,43 +54,50 @@ def count_sessions():
                         total_messages += 1
         except:
             pass
-    
-    return len(session_files), total_messages
+    return total_messages
 
 print("=" * 60)
-print("🧠 AGENTIC MEMORY SYSTEM v1.0")
+print("🧠 MOLTING MEMORY v1.0")
 print("=" * 60)
 print()
 
 # Session Discovery First!
-session_count, message_count = count_sessions()
+session_files, found_dirs = find_sessions()
+session_count = len(session_files)
+message_count = count_messages(session_files)
 
 print("🔍 SESSION DISCOVERY")
 print("-" * 40)
-print(f"Found {session_count} session files with {message_count} messages")
+
+if found_dirs:
+    print(f"Searched {len(found_dirs)} directories:")
+    for d in found_dirs:
+        print(f"   ✅ {d}")
+    print()
+    print(f"Found {session_count} session files with {message_count} messages")
+else:
+    print("No session directories found (this is fine for new installs)")
+    print()
+    print("💡 After your agent runs for a while, sessions will appear here.")
+
 print()
 
 if message_count > 0:
     print("💡 These sessions can be vectorized into your memory!")
     print()
-    
+
     ingest_choice = input("Vectorize these sessions into memory? [Y/n]: ").strip().lower()
     if ingest_choice in ["", "y", "yes"]:
         print()
         print("📚 Vectorizing sessions...")
         import subprocess
+        ingest_script = Path(__file__).parent / "ingest_sessions.py"
         result = subprocess.run(
-            [sys.executable, "/home/vel/.openclaw/agent-code/memory-system/scripts/ingest_sessions.py", "--dry-run"],
-            capture_output=True, text=True
-        )
-        
-        # Actually ingest (no --dry-run)
-        result = subprocess.run(
-            [sys.executable, "/home/vel/.openclaw/agent-code/memory-system/scripts/ingest_sessions.py"],
+            [sys.executable, str(ingest_script)],
             capture_output=True, text=True
         )
         print(result.stdout)
-        
+
         # Extract entity discoveries from output
         if "Discovered entities" in result.stdout:
             print()
@@ -75,7 +105,7 @@ if message_count > 0:
     else:
         print("Skipped session vectorization (can run later: python scripts/ingest_sessions.py)")
 else:
-    print("No existing sessions found")
+    print("No messages found yet (sessions need to accumulate first)")
 
 print()
 print("📋 SETUP MODE")

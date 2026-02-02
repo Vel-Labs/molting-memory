@@ -1,6 +1,6 @@
-# Agentic Memory System Skill
+# Molting Memory Skill
 
-**Skill ID**: `agentic-memory`
+**Skill ID**: `molting-memory`
 **Version**: 1.0.0
 **Last Updated**: 2026-02-01
 **Name**: Molting Memory
@@ -22,10 +22,11 @@ This skill gives your AI agent persistent memory that:
 ### Multi-Version Support
 
 ```python
+# Default session directories - adjust path to match YOUR setup
 SESSION_DIRS = [
-    "/home/vel/.openclaw/agents/main/sessions",      # OpenClaw v3
-    "/home/vel/.openclaw/moltbot/agents/main/sessions", # Moltbot v2
-    "/home/vel/.clawdbot/agents/main/sessions",       # Clawdbot v1
+    "~/.openclaw/agents/main/sessions",      # OpenClaw v3
+    "~/moltbot/agents/main/sessions",        # Moltbot v2
+    "~/.clawdbot/agents/main/sessions",      # Clawdbot v1
 ]
 ```
 
@@ -34,7 +35,7 @@ SESSION_DIRS = [
 ### One-Line Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/velcrafting/agentic-memory/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Vel-Labs/molting-memory/main/install.sh | bash
 ```
 
 ### Onboarding (v1.0 Flow)
@@ -106,7 +107,7 @@ This is the **key value add** - your agent immediately has context from past con
 
 ## Human-Readable Daily Memory
 
-**Location**: `/home/vel/.openclaw/memory/YYYY-MM-DD.md`
+**Location**: `~/.openclaw/memory/YYYY-MM-DD.md`
 
 **Format**:
 ```markdown
@@ -363,7 +364,7 @@ Add to SOUL.md:
 ```markdown
 ## Memory System
 
-**Location**: /home/vel/.openclaw/memory/
+**Location**: ~/.openclaw/memory/
 
 **On Boot**:
 1. Check Qdrant running: `curl http://127.0.0.1:6333/collections`
@@ -407,7 +408,7 @@ Add to SOUL.md:
 
 ### How It Works
 
-1. OpenClaw sessions saved to: `/home/vel/.openclaw/agents/main/sessions/*.jsonl`
+1. OpenClaw sessions saved to: `~/.openclaw/agents/main/sessions/*.jsonl`
 2. Ingestion script parses JSONL format
 3. Extracts user/assistant messages
 4. Saves to daily memory files
@@ -457,10 +458,10 @@ python scripts/ingest_sessions.py --dry-run
 
 ```bash
 # Check memory directory exists
-ls -la /home/vel/.openclaw/memory/
+ls -la ~/.openclaw/memory/
 
 # Check permissions
-touch /home/vel/.openclaw/memory/test.md
+touch ~/.openclaw/memory/test.md
 ```
 
 ### Entities not quarantined?
@@ -477,7 +478,7 @@ python scripts/memory_brain.py --quarantine-list
 
 ```bash
 # Check daily files exist
-ls /home/vel/.openclaw/memory/*.md
+ls ~/.openclaw/memory/*.md
 
 # Run manually
 python scripts/memory_brain.py --consolidate-weekly
@@ -506,6 +507,7 @@ memory-system/
 
 - **Concept Guide**: [Agentic Memory: A Practical Guide](https://docs.google.com/document/d/1eQDmLjwr3oLQgKRLDSHwmw13YaLjCR0V-FAIB07pzn8/edit)
 - **Implementation Guide**: [Velcrafting Agentic Memory System](https://docs.google.com/document/d/1MOcD1N5c5eXkfo3dBY3GduM-2F8B8eTvx-3ZvUgBw5E/edit)
+- **GitHub Repo**: https://github.com/Vel-Labs/molting-memory
 - **Qdrant Docs**: https://qdrant.tech/documentation/
 
 ---

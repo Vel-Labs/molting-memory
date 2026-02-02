@@ -11,9 +11,9 @@ When you run onboarding, your agent **discovers existing sessions** from ALL Ope
 ```
 🔍 SESSION DISCOVERY
 Searched 4 directories:
-   ✅ /home/vel/.openclaw/agents/main/sessions (OpenClaw v3)
-   ✅ /home/vel/.openclaw/moltbot/agents/main/sessions (Moltbot v2)
-   ✅ /home/vel/.clawdbot/agents/main/sessions (Clawdbot v1)
+   ✅ .openclaw/agents/main/sessions (OpenClaw v3)
+   ✅ moltbot/agents/main/sessions (Moltbot v2)
+   ✅ .clawdbot/agents/main/sessions (Clawdbot v1)
 
 Found 3 session files with 1,247 messages
 
@@ -35,7 +35,7 @@ Vectorize these sessions into memory? [Y/n]: y
 
 ```bash
 # 1. One-line install
-curl -sSL https://raw.githubusercontent.com/velcrafting/agentic-memory/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Vel-Labs/molting-memory/main/install.sh | bash
 
 # 2. Run onboarding (discovers sessions automatically!)
 python scripts/onboard.py
@@ -60,7 +60,7 @@ python scripts/onboard.py
 
 ```bash
 # 1. Run install script
-curl -sSL https://raw.githubusercontent.com/velcrafting/agentic-memory/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Vel-Labs/molting-memory/main/install.sh | bash
 
 # 2. Run onboarding
 python scripts/onboard.py
@@ -88,14 +88,14 @@ WEEKLY SUMMARY (Week_2026-02-01.md)
 Your memories are just text files:
 
 ```bash
-# Today's memories
-cat /home/vel/.openclaw/memory/2026-02-01.md
+# Today's memories (adjust path to your OpenClaw data directory)
+cat ~/.openclaw/memory/2026-02-01.md
 
 # Yesterday's memories
-cat /home/vel/.openclaw/memory/2026-01-31.md
+cat ~/.openclaw/memory/2026-01-31.md
 
 # Weekly summaries
-cat /home/vel/.openclaw/memory/distilled/Week_2026-02-01.md
+cat ~/.openclaw/memory/distilled/Week_2026-02-01.md
 ```
 
 ### Validating Entities
@@ -111,14 +111,14 @@ When your agent discovers a new person/project:
 
 ## For Agents
 
-### Skill ID: `agentic-memory`
+### Skill ID: `molting-memory`
 
 ### System Prompts
 
 **On skill load**:
 ```
-You have access to the agentic-memory skill.
-Memory location: /home/vel/.openclaw/memory/
+You have access to the molting-memory skill.
+Memory location: ~/.openclaw/memory/
 Qdrant URL: http://127.0.0.1:6333
 
 Key behaviors:
@@ -128,7 +128,7 @@ Key behaviors:
 4. Query memory before responding to context-dependent questions
 ```
 
-**Memory file format** (write to `/home/vel/.openclaw/memory/YYYY-MM-DD.md`):
+**Memory file format** (write to `~/.openclaw/memory/YYYY-MM-DD.md`):
 ```markdown
 ## HH:MM - CATEGORY [importance]
 
@@ -165,7 +165,7 @@ python scripts/memory_brain.py --status
 
 **Save Response**:
 ```
-✅ Saved to /home/vel/.openclaw/memory/2026-02-01.md
+✅ Saved to ~/.openclaw/memory/2026-02-01.md
 Category: DECISION | Importance: normal
 ```
 
@@ -309,7 +309,7 @@ python scripts/ingest_sessions.py --hours 1
 python scripts/ingest_sessions.py
 ```
 
-Sessions are read from `/home/vel/.openclaw/agents/main/sessions/*.jsonl` and saved to daily memory files.
+Sessions are read from `~/.openclaw/agents/main/sessions/*.jsonl` and saved to daily memory files.
 
 ---
 
@@ -318,7 +318,7 @@ Sessions are read from `/home/vel/.openclaw/agents/main/sessions/*.jsonl` and sa
 | Issue | Solution |
 |-------|----------|
 | Qdrant not running | `qdrant --uri http://127.0.0.1:6333 &` |
-| Memory not saving | Check `/home/vel/.openclaw/memory/` exists and is writable |
+| Memory not saving | Check `~/.openclaw/memory/` exists and is writable |
 | Entities not quarantining | Run `--discover` explicitly |
 | Can't find memory | Check `memory/YYYY-MM-DD.md` files |
 
@@ -327,7 +327,7 @@ Sessions are read from `/home/vel/.openclaw/agents/main/sessions/*.jsonl` and sa
 ## Resources
 
 - **Concept Guide**: https://docs.google.com/document/d/1eQDmLjwr3oLQgKRLDSHwmw13YaLjCR0V-FAIB07pzn8/edit
-- **Full Docs**: https://github.com/velcrafting/agentic-memory
+- **Full Docs**: https://github.com/Vel-Labs/molting-memory
 - **Qdrant**: https://qdrant.tech/documentation/
 
 ---
@@ -382,20 +382,20 @@ Works with sessions from ALL OpenClaw versions:
 
 | Version | Path | Status |
 |---------|------|--------|
-| **Clawdbot** (v1) | `/home/vel/.clawdbot/agents/main/sessions/` | ✅ Auto-detected |
-| **Moltbot** (v2) | `/home/vel/.openclaw/moltbot/agents/main/sessions/` | ✅ Auto-detected |
-| **OpenClaw** (v3) | `/home/vel/.openclaw/agents/main/sessions/` | ✅ Auto-detected |
+| **Clawdbot** (v1) | `~/.clawdbot/agents/main/sessions/` | ✅ Auto-detected |
+| **Moltbot** (v2) | `~/moltbot/agents/main/sessions/` | ✅ Auto-detected |
+| **OpenClaw** (v3) | `~/.openclaw/agents/main/sessions/` | ✅ Auto-detected |
 
 ### How It Works
 
-The ingest script checks all directories automatically:
+The ingest script checks all directories automatically (configurable via `config/user_config.json`):
 
 ```python
+# Default session directories - adjust path to match YOUR setup
 SESSION_DIRS = [
-    Path("/home/vel/.openclaw/agents/main/sessions"),      # OpenClaw v3
-    Path("/home/vel/.openclaw/moltbot/agents/main/sessions"), # Moltbot v2
-    Path("/home/vel/.clawdbot/agents/main/sessions"),       # Clawdbot v1
-    Path("/home/vel/clawd/agents/main/sessions"),         # Alternative v3 path
+    Path("~/.openclaw/agents/main/sessions"),      # OpenClaw v3
+    Path("~/moltbot/agents/main/sessions"),        # Moltbot v2
+    Path("~/.clawdbot/agents/main/sessions"),      # Clawdbot v1
 ]
 ```
 

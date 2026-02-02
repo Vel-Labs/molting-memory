@@ -11,30 +11,50 @@ Usage:
     python scripts/ingest_sessions.py           # Ingest all sessions
     python scripts/ingest_sessions.py --hours 4  # Ingest last 4 hours
     python scripts/ingest_sessions.py --clawdbot  # Only clawdbot sessions
-    python scripts/ingest_sessions.py --moltbot  # Only moltbot sessions  
+    python scripts/ingest_sessions.py --moltbot  # Only moltbot sessions
     python scripts/ingest_sessions.py --openclaw  # Only openclaw sessions
 """
 
 import json
 import glob
 import sys
+import os
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from dateutil import parser as date_parser
 
 # ═══════════════════════════════════════════════════════════════
-# SESSION DIRECTORIES (All OpenClaw Versions)
+# CONFIGURABLE SESSION DIRECTORIES
 # ═══════════════════════════════════════════════════════════════
 
-# All possible session directories across versions
-SESSION_DIRS = [
-    Path("/home/vel/.openclaw/agents/main/sessions"),      # OpenClaw v3
-    Path("/home/vel/.openclaw/moltbot/agents/main/sessions"), # Moltbot v2
-    Path("/home/vel/.clawdbot/agents/main/sessions"),       # Clawdbot (original)
-    Path("/home/vel/clawd/agents/main/sessions"),         # Alternative v3 path
+# Load config if available
+CONFIG_FILE = Path(__file__).parent.parent / "config" / "user_config.json"
+if CONFIG_FILE.exists():
+    with open(CONFIG_FILE, 'r') as f:
+        config = json.load(f)
+    session_dirs = config.get('session_directories', [])
+else:
+    session_dirs = []
+
+# Default session directories (relative paths - will be expanded)
+DEFAULT_SESSION_DIRS = [
+    "~/.openclaw/agents/main/sessions",      # OpenClaw v3
+    "~/moltbot/agents/main/sessions",        # Moltbot v2
+    "~/.clawdbot/agents/main/sessions",      # Clawdbot (original)
+    "~/.clawd/agents/main/sessions",         # Alternative v3 path
 ]
 
-MEMORY_DIR = Path("/home/vel/.openclaw/memory")
+# Use config or defaults
+if session_dirs:
+    SESSION_DIRS = [Path(d) for d in session_dirs]
+else:
+    SESSION_DIRS = [Path(os.path.expanduser(d)) for d in DEFAULT_SESSION_DIRS]
+
+# Memory directory - configurable or default
+if CONFIG_FILE.exists() and 'memory_directory' in config:
+    MEMORY_DIR = Path(config['memory_directory'])
+else:
+    MEMORY_DIR = Path(os.path.expanduser("~/.openclaw/memory"))
 
 def find_all_session_files():
     """Find all session files across all OpenClaw versions."""

@@ -1,10 +1,10 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════
-# AGENTIC MEMORY SYSTEM - ONE-LINE INSTALL
+# MOLTING MEMORY - ONE-LINE INSTALL
 # ═══════════════════════════════════════════════════════════════
 #
 # Usage (while your agent is online):
-#   curl -sSL https://raw.githubusercontent.com/velcrafting/agentic-memory/main/install.sh | bash
+#   curl -sSL https://raw.githubusercontent.com/Vel-Labs/molting-memory/main/install.sh | bash
 #
 # This script:
 #   1. Clones/installs the memory system
@@ -18,7 +18,7 @@
 
 set -e
 
-echo "🧠 Installing Agentic Memory System..."
+echo "🧠 Installing Molting Memory..."
 echo "======================================"
 
 # Detect OS
@@ -38,8 +38,8 @@ if [[ -d ".memory-system" ]]; then
     cd .memory-system
     git pull origin main 2>/dev/null || echo "⚠️  Could not update, using existing files"
 else
-    echo "📦 Cloning memory system template..."
-    git clone https://github.com/velcrafting/agentic-memory-template.git .memory-system 2>/dev/null || {
+    echo "📦 Cloning Molting Memory..."
+    git clone https://github.com/Vel-Labs/molting-memory.git .memory-system 2>/dev/null || {
         echo "⚠️  Git clone failed, creating directory structure..."
         mkdir -p .memory-system/{scripts,config,examples/memory}
     }
@@ -98,7 +98,7 @@ echo "   Tell your agent: 'Run memory onboarding'"
 echo ""
 echo "Resources:"
 echo "  - Concept Guide: https://docs.google.com/document/d/1eQDmLjwr3oLQgKRLDSHwmw13YaLjCR0V-FAIB07pzn8/edit"
-echo "  - Full Docs: https://github.com/velcrafting/agentic-memory-template"
+echo "  - Full Docs: https://github.com/Vel-Labs/molting-memory"
 echo ""
 echo "🪝 CLAW TO ACTION: Try it, share it, if you like it ⭐ star the repo!"
 echo "======================================"
