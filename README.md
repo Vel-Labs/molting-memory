@@ -425,6 +425,57 @@ python scripts/ingest_sessions.py --moltbot
 
 ---
 
+## Service Supervisor (Auto-Restart)
+
+Keep Qdrant and memory services running automatically:
+
+```bash
+# Start all services
+python scripts/supervisor.py --start
+
+# Check status
+python scripts/supervisor.py --status
+
+# Run monitoring loop (auto-restart if Qdrant crashes)
+python scripts/supervisor.py --monitor
+
+# Stop all services
+python scripts/supervisor.py --stop
+```
+
+### Auto-Start on WSL Terminal
+
+Add to `~/.bashrc` to start when you open your terminal:
+
+```bash
+# Auto-start Molting Memory supervisor
+if [ -f ~/.molting-memory/scripts/supervisor.py ]; then
+    python3 ~/.molting-memory/scripts/supervisor.py --start 2>/dev/null
+fi
+```
+
+### For Full System Boot (Requires sudo)
+
+Create a systemd service:
+
+```bash
+# /etc/systemd/system/molting-memory.service
+[Unit]
+Description=Molting Memory Supervisor
+After=network.target
+
+[Service]
+Type=simple
+User=youruser
+ExecStart=/home/youruser/.molting-memory/scripts/supervisor.py --monitor
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+---
+
 ## 🪝 CLAW TO ACTION
 
 **Try it, share it, if you like it ⭐ star the repo, provide feedback!**
