@@ -305,7 +305,7 @@ content = f"""# User Preferences - v1.0
 output_file.write_text(content)
 
 # Generate user_config.json
-config_file = Path("/home/vel/.openclaw/memory-system/config/user_config.json")
+config_file = Path(__file__).parent.parent / "config" / "user_config.json"
 
 entities = [e.strip() for e in answers.get('entities', '').split(',') if e.strip()]
 collections = {}
@@ -341,21 +341,24 @@ config_file.write_text(json.dumps(config, indent=2))
 # GENERATE CRON
 # ═══════════════════════════════════════════════════════
 
-cron_file = Path("/home/vel/.openclaw/memory-system/crontab.txt")
-cron_content = f"""# Agentic Memory System v1.0 - Cron Jobs
+# Get the installation directory (wherever user cloned/installed)
+INSTALL_DIR = Path(__file__).parent.parent.resolve()
+
+cron_file = INSTALL_DIR / "crontab.txt"
+cron_content = f"""# Molting Memory v1.0 - Cron Jobs
 # Generated: {datetime.now().strftime("%Y-%m-%d")}
 
 # Light consolidation
-{answers.get('cron_light', '*/30 * * * *')} cd /home/vel/.openclaw/memory-system && python scripts/memory_brain.py --consolidate light
+{answers.get('cron_light', '*/30 * * * *')} cd {INSTALL_DIR} && python scripts/memory_brain.py --consolidate light
 
 # Heavy consolidation
-{answers.get('cron_heavy', '0 */2 * * *')} cd /home/vel/.openclaw/memory-system && python scripts/memory_brain.py --consolidate heavy
+{answers.get('cron_heavy', '0 */2 * * *')} cd {INSTALL_DIR} && python scripts/memory_brain.py --consolidate heavy
 
 # Session ingestion (hourly)
-0 * * * * cd /home/vel/.openclaw/memory-system && python scripts/ingest_sessions.py --hours 1
+0 * * * * cd {INSTALL_DIR} && python scripts/ingest_sessions.py --hours 1
 
 # Full re-index (daily at 2 AM)
-0 2 * * * cd /home/vel/.openclaw/memory-system && python scripts/vectorize.py --index-all
+0 2 * * * cd {INSTALL_DIR} && python scripts/vectorize.py --index-all
 """
 cron_file.write_text(cron_content)
 
