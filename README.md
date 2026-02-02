@@ -443,15 +443,39 @@ python scripts/supervisor.py --monitor
 python scripts/supervisor.py --stop
 ```
 
-### Auto-Start on WSL Terminal
+### Environment Variables (Optional)
 
-Add to `~/.bashrc` to start when you open your terminal:
+Configure paths for your environment:
+
+```bash
+export MOLTING_MEMORY_DIR="$HOME/.molting-memory"  # Installation directory
+export QDRANT_BINARY="/usr/local/bin/qdrant"        # Qdrant binary location
+export QDRANT_PORT="6333"                           # Qdrant port
+export CHECK_INTERVAL="30"                          # Monitor check interval
+```
+
+### Auto-Start on Terminal
+
+Add to `~/.bashrc` or `~/.zshrc` to start when you open your terminal:
 
 ```bash
 # Auto-start Molting Memory supervisor
-if [ -f ~/.molting-memory/scripts/supervisor.py ]; then
-    python3 ~/.molting-memory/scripts/supervisor.py --start 2>/dev/null
+if [ -f "$HOME/.molting-memory/scripts/supervisor.py" ]; then
+    python3 "$HOME/.molting-memory/scripts/supervisor.py" --start 2>/dev/null
 fi
+```
+
+### Network Access (Tailscale, etc.)
+
+The dashboard and Qdrant can be accessed from other devices on your network:
+
+```bash
+# Set custom ports for network access
+export QDRANT_PORT="6333"
+export DASHBOARD_PORT="3000"
+
+# Dashboard URL (Tailscale IP example)
+# http://100.80.91.19:3000/dashboard
 ```
 
 ### For Full System Boot (Requires sudo)
@@ -467,6 +491,8 @@ After=network.target
 [Service]
 Type=simple
 User=youruser
+Environment=MOLTING_MEMORY_DIR=/home/youruser/.molting-memory
+Environment=QDRANT_PORT=6333
 ExecStart=/home/youruser/.molting-memory/scripts/supervisor.py --monitor
 Restart=always
 

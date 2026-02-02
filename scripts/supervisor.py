@@ -5,14 +5,21 @@ Molting Memory Service Supervisor
 Ensures Qdrant and memory consolidation are always running.
 Designed for user-level execution (no sudo required).
 
+Environment Variables (optional):
+    MOLTING_MEMORY_DIR  - Installation directory (~/.molting-memory)
+    QDRANT_BINARY       - Path to Qdrant binary
+    QDRANT_PORT         - Qdrant port (default: 6333)
+    CHECK_INTERVAL      - Monitor check interval in seconds (default: 60)
+
 Usage:
     python supervisor.py --start        # Start all services
     python supervisor.py --status       # Show status
     python supervisor.py --monitor      # Auto-restart loop (run in background)
     python supervisor.py --stop         # Stop all services
 
-Auto-start on WSL terminal (add to ~/.bashrc):
-    echo 'python3 ~/.molting-memory/supervisor.py --start' >> ~/.bashrc
+Auto-start on WSL/terminal (add to ~/.bashrc):
+    echo 'export MOLTING_MEMORY_DIR="$HOME/.molting-memory"' >> ~/.bashrc
+    echo 'python3 "$MOLTING_MEMORY_DIR/scripts/supervisor.py" --start' >> ~/.bashrc
 """
 
 import os
@@ -24,15 +31,16 @@ from pathlib import Path
 from datetime import datetime
 import requests
 
-# Configuration
-MEMORY_ROOT = Path(os.path.expanduser("~/.molting-memory"))
+# Load environment or use defaults
+MEMORY_ROOT = Path(os.environ.get("MOLTING_MEMORY_DIR", Path.home() / ".molting-memory"))
+
 CONFIG = {
     "qdrant": {
-        "binary": "/home/vel/qdrant",  # Adjust path for your system
-        "port": 6333,
+        "binary": os.environ.get("QDRANT_BINARY", "/home/vel/qdrant"),
+        "port": int(os.environ.get("QDRANT_PORT", 6333)),
         "restart_delay": 5,
     },
-    "check_interval": 60,  # seconds
+    "check_interval": int(os.environ.get("CHECK_INTERVAL", 60)),
 }
 
 LOG_FILE = MEMORY_ROOT / "supervisor.log"
