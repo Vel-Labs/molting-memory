@@ -7,19 +7,24 @@ Designed for user-level execution (no sudo required).
 
 Environment Variables (optional):
     MOLTING_MEMORY_DIR  - Installation directory (~/.molting-memory)
+    OPENCLAW_DIR        - OpenClaw installation directory (auto-detected)
     QDRANT_BINARY       - Path to Qdrant binary
     QDRANT_PORT         - Qdrant port (default: 6333)
     CHECK_INTERVAL      - Monitor check interval in seconds (default: 60)
+
+Auto-Discovery of OpenClaw:
+The supervisor will search these locations for OpenClaw:
+    - $OPENCLAW_DIR environment variable
+    - ~/.openclaw (standard OpenClaw installation)
+    - ~/.claude (Claude Code / OpenClaw fork)
+    - ~/moltbot (Moltbot installation)
+    - ~/clawd (Alternative OpenClaw location)
 
 Usage:
     python supervisor.py --start        # Start all services
     python supervisor.py --status       # Show status
     python supervisor.py --monitor      # Auto-restart loop (run in background)
     python supervisor.py --stop         # Stop all services
-
-Auto-start on WSL/terminal (add to ~/.bashrc):
-    echo 'export MOLTING_MEMORY_DIR="$HOME/.molting-memory"' >> ~/.bashrc
-    echo 'python3 "$MOLTING_MEMORY_DIR/scripts/supervisor.py" --start' >> ~/.bashrc
 """
 
 import os
@@ -31,10 +36,46 @@ from pathlib import Path
 from datetime import datetime
 import requests
 
+# ═══════════════════════════════════════════════════════════════
+# OPENCLAW AUTO-DISCOVERY
+# ═══════════════════════════════════════════════════════════════
+
+def discover_openclaw():
+    """Auto-discover OpenClaw installation directory."""
+    
+    # Priority order for discovery
+    search_paths = [
+        # Environment variable (highest priority)
+        os.environ.get("OPENCLAW_DIR"),
+        
+        # Standard installations
+        Path.home() / ".openclaw",
+        Path.home() / ".claude",        # Claude Code / OpenClaw fork
+        Path.home() / "moltbot",        # Moltbot
+        Path.home() / "clawd",          # Alternative OpenClaw
+    ]
+    
+    for path in search_paths:
+        if path:
+            # Handle Path objects and strings
+            p = Path(path) if isinstance(path, (str, Path)) else None
+            if p and p.exists() and (p / "agents").exists():
+                return str(p.resolve())
+    
+    return None  # Not found
+
+OPENCLAW_DIR = discover_openclaw()
+
 # Load environment or use defaults
 MEMORY_ROOT = Path(os.environ.get("MOLTING_MEMORY_DIR", Path.home() / ".molting-memory"))
 
 CONFIG = {
+    "openclaw": {
+        "dir": OPENCLAW_DIR,
+        "sessions": [
+            # Auto-discovered paths if OpenClaw found
+        ],
+    },
     "qdrant": {
         "binary": os.environ.get("QDRANT_BINARY", "/home/vel/qdrant"),
         "port": int(os.environ.get("QDRANT_PORT", 6333)),
@@ -42,6 +83,17 @@ CONFIG = {
     },
     "check_interval": int(os.environ.get("CHECK_INTERVAL", 60)),
 }
+
+# Build session directories from discovered OpenClaw
+if OPENCLAW_DIR:
+    openclaw_path = Path(OPENCLAW_DIR)
+    CONFIG["openclaw"]["sessions"] = [
+        str(openclaw_path / "agents" / "main" / "sessions"),      # OpenClaw v3
+        str(openclaw_path / "moltbot" / "agents" / "main" / "sessions"),  # Moltbot v2
+        str(openclaw_path / ".clawdbot" / "agents" / "main" / "sessions"), # Clawdbot v1
+    ]
+else:
+    CONFIG["openclaw"]["sessions"] = []
 
 LOG_FILE = MEMORY_ROOT / "supervisor.log"
 PID_DIR = MEMORY_ROOT / "pids"
@@ -159,10 +211,24 @@ def status():
     print("\n🛡️  MOLTING MEMORY STATUS")
     print("=" * 40)
     
+    # OpenClaw Discovery
+    if OPENCLAW_DIR:
+        print(f"OpenClaw:    ✅ Found at {OPENCLAW_DIR}")
+    else:
+        print("OpenClaw:    ⚠️  Not found (set OPENCLAW_DIR)")
+    
+    # Session directories
+    sessions = CONFIG["openclaw"]["sessions"]
+    if sessions:
+        print(f"Sessions:    {len(sessions)} directories configured")
+    else:
+        print("Sessions:    Not configured")
+    
+    # Qdrant
     qdrant_ok = check_qdrant()
     qdrant_pid = get_pid("qdrant")
     
-    print(f"Qdrant:      {'✅ Running' if qdrant_ok else '❌ Down'}")
+    print(f"\nQdrant:      {'✅ Running' if qdrant_ok else '❌ Down'}")
     if qdrant_pid:
         print(f"  PID: {qdrant_pid}")
         print(f"  URL: http://127.0.0.1:{CONFIG['qdrant']['port']}")
