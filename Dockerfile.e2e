@@ -1,0 +1,104 @@
+# ═══════════════════════════════════════════════════════════════
+# AGENTIC MEMORY SYSTEM v1.0 - FULL E2E TEST
+# ═══════════════════════════════════════════════════════════════
+#
+# This Docker test:
+# 1. Installs OpenClaw
+# 2. Runs the agent (simulates messages)
+# 3. Verifies sessions are created
+# 4. Runs memory onboarding
+# 5. Validates everything works end-to-end
+#
+# Build: docker build -t memory-e2e .
+# Run:   docker run -it --rm memory-e2e
+#
+# ═══════════════════════════════════════════════════════════════
+
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# ═══════════════════════════════════════════════════════
+# 1. Install system dependencies
+# ═══════════════════════════════════════════════════════
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# ═══════════════════════════════════════════════════════
+# 2. Install Qdrant
+# ═══════════════════════════════════════════════════════
+RUN curl -L https://qdrant.io/releases/latest/download/qdrant-x86_64-unknown-linux-musl.tar.gz -o /tmp/qdrant.tar.gz && \
+    tar xzf /tmp/qdrant.tar.gz -C /usr/local/bin && \
+    rm /tmp/qdrant.tar.gz
+
+# ═══════════════════════════════════════════════════════
+# 3. Copy memory system (before OpenClaw install)
+# ═══════════════════════════════════════════════════════
+COPY . /app/memory-system
+
+# ═══════════════════════════════════════════════════════
+# 4. Install OpenClaw
+# ═══════════════════════════════════════════════════════
+RUN npm install -g openclaw
+
+# ═══════════════════════════════════════════════════════
+# 5. Install Python deps for memory system
+# ═══════════════════════════════════════════════════════
+RUN pip install --no-cache-dir qdrant-client sentence-transformers
+
+# ═══════════════════════════════════════════════════════
+# 6. Create directories
+# ═══════════════════════════════════════════════════════
+RUN mkdir -p /home/vel/.openclaw/agent-code/memory-system
+RUN mkdir -p /home/vel/.openclaw/memory/{entities,distilled}
+RUN mkdir -p /home/vel/.openclaw/memory/entities/_quarantine
+RUN mkdir -p /home/vel/.openclaw/agents/main/sessions
+
+# ═══════════════════════════════════════════════════════
+# 7. Create test session (simulate messages)
+# ═══════════════════════════════════════════════════════
+RUN cat > /home/vel/.openclaw/agents/main/sessions/test-session.jsonl << 'EOF'
+{"type":"message","id":"test1","timestamp":"2026-02-01T18:00:00Z","message":{"role":"user","content":[{"type":"text","text":"Remember this: we use venv for Python projects"}]}
+{"type":"message","id":"test2","timestamp":"2026-02-01T18:01:00Z","message":{"role":"assistant","content":[{"type":"text","text":"Got it! I'll remember that we use venv for Python projects."}]}
+{"type":"message","id":"test3","timestamp":"2026-02-01T18:02:00Z","message":{"role":"user","content":[{"type":"text","text":"Also, Dr. Smith is our project lead for the memory system"}]}
+{"type":"message","id":"test4","timestamp":"2026-02-01T18:03:00Z","message":{"role":"assistant","content":[{"type":"text","text":"Understood! Dr. Smith is the project lead for the memory system."}]}
+EOF
+
+# ═══════════════════════════════════════════════════════
+# 8. Create test memory file
+# ═══════════════════════════════════════════════════════
+RUN cat > /home/vel/.openclaw/memory/2026-02-01.md << 'EOF'
+# Memory Test
+
+## Test Entry
+
+This is a test memory entry.
+EOF
+
+# ═══════════════════════════════════════════════════════
+# 9. Start Qdrant in background
+# ═══════════════════════════════════════════════════════
+CMD qdrant --uri http://127.0.0.1:6333 &
+
+# Wait for Qdrant
+RUN sleep 3 && curl -s http://127.0.0.1:6333/collections > /dev/null && echo "Qdrant is running"
+
+# ═══════════════════════════════════════════════════════
+# 10. Run E2E Test
+# ═══════════════════════════════════════════════════════
+WORKDIR /app/memory-system
+
+# Copy test session to expected location for testing
+RUN cp /home/vel/.openclaw/agents/main/sessions/test-session.jsonl /app/memory-system/test-session.jsonl
+
+# Run the test script
+# Copy test script
+COPY test_comprehensive.sh /app/test_comprehensive.sh
+RUN chmod +x /app/test_comprehensive.sh
+
+CMD bash /app/test_comprehensive.sh
