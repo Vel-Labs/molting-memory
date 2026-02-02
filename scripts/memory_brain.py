@@ -738,7 +738,7 @@ class SecretsManager:
         # Also store in Qdrant for vector search
         try:
             vec = self.brain._embed(f"secret: {name} - {description}")
-            self.brain.client.upsert_points(
+            self.brain.client.upsert(
                 collection_name="mem_secrets",
                 points=[
                     PointStruct(
