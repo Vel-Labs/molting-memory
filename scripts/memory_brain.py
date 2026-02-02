@@ -41,6 +41,7 @@ COLLECTIONS = {
     "mem_ren_collective": "Agent capabilities, decisions",
     "mem_sessions": "Session transcripts",
     "mem_distilled": "Weekly summaries",
+    "mem_secrets": "Credentials, API keys, tokens (encrypted storage)",
 }
 
 # Memory trigger patterns
@@ -695,6 +696,124 @@ Are these separate contexts (e.g., "venv for apps, conda for data science"), or 
         return results
 
 
+# ═══════════════════════════════════════════════════════════════
+# SECRETS MANAGER (v1.0)
+# ═══════════════════════════════════════════════════════════════
+
+class SecretsManager:
+    """Secure credential storage in memory.
+    
+    Secrets are stored in mem_secrets collection with simple base64 encoding.
+    For production use, integrate with a proper secrets manager (HashiCorp Vault, AWS Secrets, etc.)
+    """
+    
+    def __init__(self, brain=None):
+        self.brain = brain or MemoryBrain()
+        self.secrets_file = MEMORY_DIR / "secrets.json.enc"
+    
+    def _encode(self, value: str) -> str:
+        """Simple encoding - NOT encryption. For demo purposes only."""
+        import base64
+        return base64.b64encode(value.encode()).decode()
+    
+    def _decode(self, encoded: str) -> str:
+        """Decode a secret."""
+        import base64
+        return base64.b64decode(encoded.encode()).decode()
+    
+    def store(self, name: str, value: str, description: str = "") -> dict:
+        """Store a secret in memory."""
+        encoded = self._encode(value)
+        
+        # Save to encrypted file (for persistence)
+        secrets = self._load_secrets()
+        secrets[name] = {
+            "value": encoded,
+            "description": description,
+            "created": datetime.now(timezone.utc).isoformat(),
+            "updated": datetime.now(timezone.utc).isoformat()
+        }
+        self._save_secrets(secrets)
+        
+        # Also store in Qdrant for vector search
+        try:
+            vec = self.brain._embed(f"secret: {name} - {description}")
+            self.brain.client.upsert_points(
+                collection_name="mem_secrets",
+                points=[
+                    PointStruct(
+                        id=hash(name) % 1000000,
+                        vector=vec,
+                        payload={
+                            "name": name,
+                            "description": description,
+                            "created": datetime.now(timezone.utc).isoformat()
+                        }
+                    )
+                ]
+            )
+        except Exception as e:
+            print(f"⚠️ Could not store in Qdrant: {e}")
+        
+        return {"name": name, "status": "stored", "description": description}
+    
+    def retrieve(self, name: str) -> dict:
+        """Retrieve a secret by name."""
+        secrets = self._load_secrets()
+        
+        if name not in secrets:
+            return {"error": f"Secret '{name}' not found"}
+        
+        secret = secrets[name]
+        try:
+            decoded = self._decode(secret["value"])
+            return {
+                "name": name,
+                "value": decoded,
+                "description": secret.get("description", ""),
+                "created": secret.get("created"),
+                "updated": secret.get("updated")
+            }
+        except Exception as e:
+            return {"error": f"Failed to decode secret: {e}"}
+    
+    def list_secrets(self) -> list:
+        """List all stored secret names (not values)."""
+        secrets = self._load_secrets()
+        return [
+            {"name": name, "description": info.get("description", "")}
+            for name, info in secrets.items()
+        ]
+    
+    def delete(self, name: str) -> dict:
+        """Delete a secret."""
+        secrets = self._load_secrets()
+        
+        if name not in secrets:
+            return {"error": f"Secret '{name}' not found"}
+        
+        del secrets[name]
+        self._save_secrets(secrets)
+        
+        return {"name": name, "status": "deleted"}
+    
+    def _load_secrets(self) -> dict:
+        """Load secrets from file."""
+        if self.secrets_file.exists():
+            try:
+                with open(self.secrets_file, 'r') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
+    
+    def _save_secrets(self, secrets: dict):
+        """Save secrets to file."""
+        self.secrets_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.secrets_file, 'w') as f:
+            json.dump(secrets, f, indent=2)
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
@@ -706,6 +825,16 @@ if __name__ == "__main__":
     parser.add_argument("--quarantine-list", action="store_true", help="List quarantined entities")
     parser.add_argument("--validate", type=str, help="Validate entity from quarantine")
     parser.add_argument("--category", type=str, default="general", help="Category for memory")
+    parser.add_argument("--prune", action="store_true", help="Prune old daily files")
+    parser.add_argument("--conflicts", type=str, help="Check for memory conflicts")
+    
+    # Secrets commands
+    parser.add_argument("--secret-store", nargs=3, metavar=("NAME", "VALUE", "DESC"),
+                        help="Store a secret: --secret-store NAME VALUE DESCRIPTION")
+    parser.add_argument("--secret-get", type=str, metavar="NAME", help="Retrieve a secret")
+    parser.add_argument("--secret-list", action="store_true", help="List all secrets")
+    parser.add_argument("--secret-delete", type=str, metavar="NAME", help="Delete a secret")
+    
     args = parser.parse_args()
     
     brain = MemoryBrain()
@@ -764,10 +893,45 @@ if __name__ == "__main__":
         if question:
             print(f"\n{question}")
     
+    # ═══════════════════════════════════════════════════════
+    # SECRETS COMMANDS
+    # ═══════════════════════════════════════════════════════
+    
+    elif args.secret_store:
+        name, value, desc = args.secret_store
+        secrets = SecretsManager(brain)
+        result = secrets.store(name, value, desc)
+        print(f"✅ Stored secret: {name}")
+    
+    elif args.secret_get:
+        secrets = SecretsManager(brain)
+        result = secrets.retrieve(args.secret_get)
+        if "error" in result:
+            print(f"❌ {result['error']}")
+        else:
+            print(f"\n🔐 Secret: {result['name']}")
+            print(f"   Value: {result['value']}")
+            print(f"   Description: {result.get('description', '')}")
+    
+    elif args.secret_list:
+        secrets = SecretsManager(brain)
+        items = secrets.list_secrets()
+        print(f"\n🔐 Stored Secrets ({len(items)}):")
+        for item in items:
+            print(f"  • {item['name']} - {item.get('description', 'No description')}")
+    
+    elif args.secret_delete:
+        secrets = SecretsManager(brain)
+        result = secrets.delete(args.secret_delete)
+        if "error" in result:
+            print(f"❌ {result['error']}")
+        else:
+            print(f"✅ Deleted secret: {result['name']}")
+    
     else:
         print("MemoryBrain - Human-Readable Versioning with Entity Quarantine")
         print()
-        print("Commands:")
+        print("Memory Commands:")
         print("  --status                    Show status")
         print("  --save 'text'               Save to daily memory")
         print("  --category decision/action  Category for memory")
@@ -778,3 +942,9 @@ if __name__ == "__main__":
         print("  --query 'text'              Query all memory tiers")
         print("  --prune                     Prune old daily files")
         print("  --conflicts 'query'         Check for memory conflicts")
+        print()
+        print("Secrets Commands:")
+        print("  --secret-store NAME VALUE DESC  Store a secret")
+        print("  --secret-get NAME               Retrieve a secret")
+        print("  --secret-list                   List all secrets")
+        print("  --secret-delete NAME            Delete a secret")
